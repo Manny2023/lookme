@@ -1,0 +1,84 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07101b"><title>TedyCam</title>
+<link rel="manifest" href="./manifest.json"><link rel="icon" href="./icons/icon-192.png">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#05080d;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{display:flex;align-items:center;gap:10px;padding:12px 15px;background:#07101b;border-bottom:1px solid #1e3b5b}
+header img{width:48px;height:48px;border-radius:13px}h1{font-size:22px;margin:0}small,.note{color:#92a7bb}
+main{max-width:950px;margin:auto;padding:12px}.hero{text-align:center}.hero img{width:145px;max-width:45vw;border-radius:25px}
+.card{background:#0c1624;border:1px solid #203d5e;border-radius:18px;padding:14px;margin:12px 0}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:9px}button,input{font:inherit}
+button{border:0;border-radius:13px;padding:13px;font-weight:800;color:#fff;background:#172a42}
+button.primary{background:linear-gradient(135deg,#0877ff,#28d6ff)}button.on{outline:2px solid #32d8ff}
+label{display:block;font-size:13px;color:#92a7bb;margin:7px 0 5px}input{width:100%;padding:13px;border-radius:12px;border:1px solid #294c74;background:#07101b;color:#fff}
+.hidden{display:none!important}.status{padding:10px;margin-top:10px;border:1px solid #294967;border-radius:12px;color:#9bb0c4}
+.good{color:#baf5c5;border-color:#2d6d3c}.bad{color:#ffc2bf;border-color:#703632}
+.video{aspect-ratio:16/9;background:#000;border-radius:16px;overflow:hidden;margin-top:10px;touch-action:none}
+video{width:100%;height:100%;object-fit:contain;background:#000;transform-origin:center}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}.controls button{flex:1 1 105px;padding:10px}
+.note{font-size:13px;line-height:1.45}.install{display:none}
+</style></head><body>
+<header><img src="./icons/icon-192.png"><div><h1>TedyCam</h1><small>Tu cámara remota</small></div></header>
+<main><div class="hero"><img src="./logo.png"></div>
+<div class="tabs"><button id="tc" onclick="show('cam')">📷 CÁMARA</button><button id="tv" onclick="show('view')">👁 VER</button></div>
+
+<section id="cam" class="hidden"><div class="card">
+<label>Frase de conexión</label><input id="cs" placeholder="Ej. osito azul" autocomplete="off">
+<div class="controls"><button class="primary" onclick="start()">🟢 ENCENDER</button><button onclick="stop()">🔴 APAGAR</button><button class="install">⬇ INSTALAR</button></div>
+<div id="cst" class="status">Cámara apagada.</div><div class="video"><video id="local" autoplay playsinline muted></video></div>
+<div class="controls"><button onclick="flip()">🔄 Girar</button><button onclick="torch()">🔦 Luz</button><button onclick="zoom(-1)">➖ Zoom</button><button onclick="zoom(1)">➕ Zoom</button></div>
+<p class="note">La frase se guarda en este teléfono. La pantalla debe permanecer activa mientras transmite; puedes bajar el brillo al mínimo.</p>
+</div></section>
+
+<section id="view"><div class="card">
+<label>Frase de conexión</label><input id="vs" placeholder="La misma frase del teléfono cámara" autocomplete="off">
+<div class="controls"><button class="primary" onclick="connect()">📡 CONECTAR</button><button onclick="disconnect()">DESCONECTAR</button><button class="install">⬇ INSTALAR</button></div>
+<div id="vst" class="status">Sin conectar.</div><div class="video"><video id="remote" autoplay playsinline muted></video></div>
+<div class="controls"><button id="snd" onclick="sound()">🔊 Sonido</button><button onclick="dzoom(-.25)">➖ Zoom</button><button onclick="dzoom(.25)">➕ Zoom</button><button onclick="cmd('zoom',-1)">📷− Real</button><button onclick="cmd('zoom',1)">📷＋ Real</button><button onclick="cmd('torch')">🔦 Luz</button><button onclick="full()">⛶ Pantalla</button></div>
+<p class="note">El visor no usa la cámara de tu laptop o celular. Solo recibe la imagen del teléfono que está transmitiendo.</p>
+</div></section></main>
+<script>
+const CFG={host:"0.peerjs.com",port:443,path:"/",secure:true,debug:1};
+let cp=null,stream=null,track=null,facing="environment",torchOn=false,vp=null,call=null,data=null,z=1,deferredPrompt=null;
+if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;document.querySelectorAll(".install").forEach(x=>x.style.display="inline-block")});
+document.addEventListener("click",async e=>{if(e.target.classList?.contains("install")&&deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}});
+function show(x){cam.classList.toggle("hidden",x!=="cam");view.classList.toggle("hidden",x!=="view");tc.classList.toggle("on",x==="cam");tv.classList.toggle("on",x==="view")}
+async function hash(s){let h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("tedycam-pro|"+s.trim().toLowerCase()));return[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("")}
+async function id(s){return"tedy-"+(await hash(s)).slice(0,30)}
+function save(){if(cs.value)localStorage.setItem("tedyPhrase",cs.value);if(vs.value)localStorage.setItem("tedyPhrase",vs.value)}
+function load(){let p=localStorage.getItem("tedyPhrase")||"";cs.value=p;vs.value=p}load();
+async function start(){
+ if(!cs.value)return alert("Escribe una frase que solo tú conozcas.");save();stop();
+ try{
+ cst.textContent="Abriendo cámara y micrófono…";
+ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:20,max:30}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+ local.srcObject=stream;track=stream.getVideoTracks()[0];cp=new Peer(await id(cs.value),CFG);
+ cp.on("open",()=>{cst.textContent="🟢 ENCENDIDA · esperando conexión";cst.className="status good"});
+ cp.on("connection",c=>{data=c;c.on("data",async m=>{if(m?.type==="hello")c.send({type:"ready"});if(m?.type==="zoom")c.send({type:"zoomResult",ok:await hw(m.d)});if(m?.type==="torch")c.send({type:"torchResult",ok:await rtorch()})})});
+ cp.on("call",c=>{c.answer(stream);cst.textContent="🟢 TRANSMITIENDO";cst.className="status good";c.on("close",()=>{cst.textContent="🟢 ENCENDIDA · esperando conexión"})});
+ cp.on("error",e=>{cst.textContent="⚠️ "+e.type;cst.className="status bad"});
+ }catch(e){cst.textContent="❌ Revisa permisos y que la página use HTTPS.";cst.className="status bad"}
+}
+function stop(){try{cp?.destroy()}catch(e){}cp=null;stream?.getTracks().forEach(t=>t.stop());stream=null;track=null;local.srcObject=null;cst.textContent="Cámara apagada.";cst.className="status"}
+async function flip(){if(!stream)return;let p=cs.value;facing=facing==="environment"?"user":"environment";stop();cs.value=p;await start()}
+async function hw(d){try{let c=track?.getCapabilities?.()||{},s=track?.getSettings?.()||{};if(!c.zoom)return false;let step=c.zoom.step||.1,n=(s.zoom||c.zoom.min||1)+d*step*3;n=Math.max(c.zoom.min,Math.min(c.zoom.max,n));await track.applyConstraints({advanced:[{zoom:n}]});return true}catch(e){return false}}
+async function zoom(d){if(!await hw(d))alert("Este teléfono no ofrece zoom real al navegador.")}
+async function rtorch(){try{let c=track?.getCapabilities?.()||{};if(!c.torch)return false;torchOn=!torchOn;await track.applyConstraints({advanced:[{torch:torchOn}]});return true}catch(e){return false}}
+async function torch(){if(!await rtorch())alert("Linterna no disponible.")}
+function silent(){try{let A=window.AudioContext||window.webkitAudioContext,a=new A(),o=a.createOscillator(),g=a.createGain(),d=a.createMediaStreamDestination();g.gain.value=0;o.connect(g).connect(d);o.start();return d.stream}catch(e){return new MediaStream()}}
+async function connect(){
+ if(!vs.value)return alert("Escribe la misma frase.");save();disconnect();vst.textContent="Buscando…";
+ let rid=await id(vs.value);vp=new Peer(undefined,CFG);
+ vp.on("open",()=>{data=vp.connect(rid,{reliable:true});data.on("open",()=>data.send({type:"hello"}));data.on("data",m=>{if(m?.type==="ready"&&!call){vst.textContent="Cámara encontrada…";call=vp.call(rid,silent());call.on("stream",s=>{remote.srcObject=s;remote.play().catch(()=>{});vst.textContent="🟢 EN VIVO";vst.className="status good"});call.on("close",()=>{vst.textContent="Desconectada";vst.className="status bad"})}})});
+ vp.on("error",e=>{vst.textContent=e.type==="peer-unavailable"?"🔴 No encuentro una cámara encendida con esa frase.":"⚠️ "+e.type;vst.className="status bad"});
+}
+function disconnect(){try{call?.close()}catch(e){}try{data?.close()}catch(e){}try{vp?.destroy()}catch(e){}call=null;data=null;vp=null;remote.srcObject=null;vst.textContent="Sin conectar.";vst.className="status"}
+function sound(){remote.muted=!remote.muted;remote.play().catch(()=>{});snd.textContent=remote.muted?"🔊 Sonido":"🔇 Silenciar"}
+function dzoom(d){z=Math.max(1,Math.min(5,z+d));remote.style.transform=`scale(${z})`}
+function cmd(type,d=0){if(data?.open)data.send({type,d});else alert("Primero conecta la cámara.")}
+function full(){let e=remote.parentElement;if(e.requestFullscreen)e.requestFullscreen()}
+show("view");
+</script></body></html>
