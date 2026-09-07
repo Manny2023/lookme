@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#07111f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>TedyCam</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/icon-192.png">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{
+  --bg:#05090f;--panel:#0d1624;--panel2:#101c2d;--line:#1c3555;
+  --text:#f6fbff;--muted:#8ea4ba;--cyan:#29d3ff;--blue:#0b6dff;
+  --ok:#34d058;--bad:#ff5d57;--warn:#ffd84d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#04070c,#08111f 55%,#04070c);color:var(--text);
+font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;min-height:100vh}
+header{position:sticky;top:0;z-index:30;background:rgba(5,9,15,.94);backdrop-filter:blur(10px);
+border-bottom:1px solid var(--line);padding:10px 14px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand img{width:48px;height:48px;border-radius:14px;object-fit:cover}
+.brand h1{font-size:22px;margin:0}.brand small{display:block;color:var(--muted)}
+main{max-width:1150px;margin:auto;padding:14px}
+.card{background:rgba(13,22,36,.96);border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:14px;
+box-shadow:0 10px 35px rgba(0,0,0,.25)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+button,input{font:inherit}
+button{border:0;border-radius:13px;padding:12px 14px;font-weight:800;cursor:pointer}
+.primary{background:linear-gradient(135deg,var(--blue),var(--cyan));color:white}
+.secondary{background:#17253a;color:white;border:1px solid #24466c}
+.danger{background:#3d1717;color:#ffc0bd}
+.tabs button.active{outline:2px solid var(--cyan)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grow{flex:1 1 220px}
+label{display:block;color:var(--muted);font-size:13px;margin:4px 0 6px}
+input{width:100%;background:#07111d;color:white;border:1px solid #264463;border-radius:12px;padding:13px}
+.status{margin-top:10px;padding:10px 12px;border:1px solid #284966;border-radius:12px;color:var(--muted);background:#08101b}
+.status.good{color:#baf6c6;border-color:#2c6b3b}.status.bad{color:#ffc1bd;border-color:#6c342f}
+.preview,.videoWrap{position:relative;background:#000;border-radius:16px;overflow:hidden;aspect-ratio:16/9;touch-action:none}
+video{width:100%;height:100%;object-fit:contain;background:#000;transform-origin:center}
+.controls{display:flex;gap:8px;flex-wrap:wrap;padding-top:10px}
+.controls button{background:#18273c;color:white;border:1px solid #294b72;padding:9px 11px}
+.note{color:var(--muted);font-size:13px;line-height:1.45}
+.camgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.tile{background:var(--panel2);border:1px solid #234360;border-radius:16px;overflow:hidden}
+.tilehead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
+.pill{font-size:12px;border-radius:999px;padding:5px 8px;background:#0a1422;color:var(--muted)}
+.hidden{display:none!important}.big{grid-column:1/-1}.big .videoWrap{max-height:75vh}
+.install{display:none}
+.logoHero{display:flex;justify-content:center;padding:6px 0 14px}
+.logoHero img{width:150px;max-width:45vw;border-radius:28px;box-shadow:0 0 40px rgba(41,211,255,.18)}
+@media(max-width:600px){main{padding:10px}.card{padding:12px}.controls button{flex:1 1 90px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="./icons/icon-192.png" alt="TedyCam">
+    <div><h1>TedyCam</h1><small>Vista remota entre tus equipos</small></div>
+  </div>
+</header>
+
+<main>
+  <div class="logoHero"><img src="./logo.png" alt="TedyCam"></div>
+
+  <div class="tabs">
+    <button id="tabCam" class="secondary" onclick="showMode('camera')">📷 Este equipo transmite</button>
+    <button id="tabView" class="secondary" onclick="showMode('viewer')">👁 Este equipo visualiza</button>
+  </div>
+
+  <section id="cameraMode" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div class="grow">
+          <label>Clave privada</label>
+          <input id="camSecret" type="password" placeholder="Usa la misma clave en tus equipos" autocomplete="off">
+        </div>
+        <div class="grow">
+          <label>Nombre de este punto</label>
+          <input id="camName" placeholder="Ej. puerta, ventana, patio" value="puerta">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" onclick="startCamera()">▶ Iniciar</button>
+        <button class="danger" onclick="stopCamera()">■ Detener</button>
+        <button class="secondary install">⬇ Instalar</button>
+      </div>
+      <div id="camStatus" class="status">Esperando.</div>
+      <div class="preview" style="margin-top:12px">
+        <video id="localVideo" autoplay playsinline muted></video>
+      </div>
+      <div class="controls">
+        <button onclick="switchCamera()">🔄 Cambiar cámara</button>
+        <button onclick="toggleTorch()">🔦 Linterna</button>
+        <button onclick="localZoom(-1)">➖ Zoom</button>
+        <button onclick="localZoom(1)">➕ Zoom</button>
+      </div>
+      <p class="note">El micrófono se transmite. Este video local queda silenciado para evitar eco. Si el equipo se usará por horas, déjalo conectado y ventilado.</p>
+    </div>
+  </section>
+
+  <section id="viewerMode" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div class="grow">
+          <label>Clave privada</label>
+          <input id="viewSecret" type="password" placeholder="La misma clave de tus equipos" autocomplete="off">
+        </div>
+        <div class="grow">
+          <label>Nombre del punto</label>
+          <input id="viewCamName" placeholder="Ej. puerta">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" onclick="addViewerCamera()">＋ Agregar</button>
+        <button class="secondary" onclick="addDefaults()">Puerta / Ventana / Patio</button>
+        <button class="secondary install">⬇ Instalar</button>
+      </div>
+      <div id="viewerStatus" class="status">Agrega un punto para comenzar.</div>
+    </div>
+    <div id="grid" class="camgrid"></div>
+  </section>
+
+  <div class="card">
+    <b>Para que funcione</b>
+    <p class="note">TedyCam debe estar alojada en una dirección HTTPS. Si Android la abre como <code>content://</code>, bloqueará cámara y micrófono. El sonido puede requerir tocar el botón “🔊 Sonido” por las políticas del navegador.</p>
+  </div>
+</main>
+
+<script>
+let deferredPrompt=null,mode=null,camPeer=null,camStream=null,camVideoTrack=null,camFacing="environment",torchOn=false,wakeLock=null,camDataConnections=[];
+const viewers=new Map();
+
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;document.querySelectorAll(".install").forEach(b=>b.style.display="inline-block");});
+document.addEventListener("click",async e=>{if(e.target?.classList.contains("install")&&deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;}});
+
+function showMode(m){
+  mode=m;
+  cameraMode.classList.toggle("hidden",m!=="camera");
+  viewerMode.classList.toggle("hidden",m!=="viewer");
+  tabCam.classList.toggle("active",m==="camera");
+  tabView.classList.toggle("active",m==="viewer");
+}
+function normalizeName(s){return (s||"").trim().toLowerCase().replace(/[^a-z0-9áéíóúüñ_-]/gi,"-").replace(/-+/g,"-").slice(0,40);}
+async function hashText(t){const d=new TextEncoder().encode(t),h=await crypto.subtle.digest("SHA-256",d);return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("");}
+async function peerIdFor(secret,name){const h=await hashText("tedycam|"+secret+"|"+normalizeName(name));return "tcam-"+h.slice(0,28);}
+async function requestWakeLock(){try{if("wakeLock"in navigator)wakeLock=await navigator.wakeLock.request("screen");}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&mode==="camera"&&camStream)requestWakeLock();});
+
+function setCamStatus(m,t=""){camStatus.textContent=m;camStatus.className="status "+t}
+function setViewerStatus(m,t=""){viewerStatus.textContent=m;viewerStatus.className="status "+t}
+
+async function getCameraStream(){
+  return navigator.mediaDevices.getUserMedia({
+    video:{facingMode:{ideal:camFacing},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:20,max:30}},
+    audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
+  });
+}
+async function startCamera(){
+  const secret=camSecret.value,name=normalizeName(camName.value);
+  if(!secret||!name){alert("Pon la clave y el nombre.");return;}
+  stopCamera();
+  try{
+    setCamStatus("Pidiendo permisos…");
+    camStream=await getCameraStream();
+    localVideo.srcObject=camStream;
+    camVideoTrack=camStream.getVideoTracks()[0];
+    await requestWakeLock();
+    const id=await peerIdFor(secret,name);
+    camPeer=new Peer(id,{debug:1});
+    camPeer.on("open",()=>setCamStatus("✅ "+name.toUpperCase()+" activo · esperando visor","good"));
+    camPeer.on("call",call=>{
+      call.answer(camStream);
+      call.on("close",()=>setCamStatus("✅ Activo · visor desconectado","good"));
+      setCamStatus("🟢 "+name.toUpperCase()+" · transmitiendo","good");
+    });
+    camPeer.on("connection",conn=>{
+      camDataConnections.push(conn);
+      conn.on("data",msg=>handleRemoteCommand(msg,conn));
+      conn.on("close",()=>camDataConnections=camDataConnections.filter(c=>c!==conn));
+    });
+    camPeer.on("disconnected",()=>{setCamStatus("Reconectando…","bad");setTimeout(()=>{try{camPeer.reconnect()}catch(e){}},1200)});
+    camPeer.on("error",e=>setCamStatus("⚠️ Error: "+e.type,"bad"));
+  }catch(e){
+    setCamStatus("❌ No se pudo abrir cámara/micrófono. Revisa permisos y HTTPS.","bad");
+  }
+}
+function stopCamera(){
+  try{camPeer?.destroy()}catch(e){}
+  camPeer=null;
+  camStream?.getTracks().forEach(t=>t.stop());
+  camStream=null;camVideoTrack=null;localVideo.srcObject=null;
+  setCamStatus("Detenido.");
+}
+async function switchCamera(){if(!camStream)return alert("Primero inicia.");const s=camSecret.value,n=camName.value;camFacing=camFacing==="environment"?"user":"environment";stopCamera();camSecret.value=s;camName.value=n;await startCamera();}
+async function toggleTorch(){
+  if(!camVideoTrack)return;
+  try{const c=camVideoTrack.getCapabilities?.()||{};if(!c.torch)return alert("Este equipo no permite controlar la linterna.");torchOn=!torchOn;await camVideoTrack.applyConstraints({advanced:[{torch:torchOn}]});}
+  catch(e){alert("No se pudo cambiar la linterna.");}
+}
+async function applyHardwareZoom(delta){
+  if(!camVideoTrack)return{ok:false};
+  try{
+    const c=camVideoTrack.getCapabilities?.()||{},s=camVideoTrack.getSettings?.()||{};
+    if(!c.zoom)return{ok:false};
+    const step=c.zoom.step||.1;let z=(s.zoom||c.zoom.min||1)+(delta*step*3);
+    z=Math.max(c.zoom.min,Math.min(c.zoom.max,z));
+    await camVideoTrack.applyConstraints({advanced:[{zoom:z}]});
+    return{ok:true,zoom:z};
+  }catch(e){return{ok:false};}
+}
+async function localZoom(d){const r=await applyHardwareZoom(d);if(!r.ok)alert("Este equipo no expone zoom de cámara al navegador.");}
+async function handleRemoteCommand(msg,conn){
+  if(!msg||typeof msg!=="object")return;
+  if(msg.type==="zoom"){const r=await applyHardwareZoom(msg.delta||0);conn.send({type:"zoomResult",...r});}
+  if(msg.type==="torch"){
+    try{const c=camVideoTrack?.getCapabilities?.()||{};if(!c.torch)return conn.send({type:"torchResult",ok:false});torchOn=!torchOn;await camVideoTrack.applyConstraints({advanced:[{torch:torchOn}]});conn.send({type:"torchResult",ok:true,on:torchOn});}
+    catch(e){conn.send({type:"torchResult",ok:false});}
+  }
+}
+async function addDefaults(){for(const n of["puerta","ventana","patio"])await addViewerCamera(n);}
+async function addViewerCamera(forcedName=null){
+  const secret=viewSecret.value,name=normalizeName(forcedName||viewCamName.value);
+  if(!secret||!name){alert("Pon la clave y el nombre.");return;}
+  if(viewers.has(name)){setViewerStatus("Ese punto ya está agregado.");return;}
+  const remoteId=await peerIdFor(secret,name),peer=new Peer(undefined,{debug:1}),state={name,peer,call:null,conn:null,zoom:1,video:null,tile:null};
+  createTile(state);viewers.set(name,state);setViewerStatus("Conectando con "+name+"…");
+  peer.on("open",()=>{
+    const conn=peer.connect(remoteId,{reliable:true});state.conn=conn;
+    conn.on("data",msg=>{if(msg?.type==="zoomResult"&&!msg.ok)flashTile(state,"Usa zoom digital.");});
+    const call=peer.call(remoteId,new MediaStream());state.call=call;
+    call.on("stream",stream=>{state.video.srcObject=stream;state.video.play().catch(()=>{});markConnected(state,true);setViewerStatus("✅ Conectado.","good");});
+    call.on("close",()=>markConnected(state,false));call.on("error",()=>markConnected(state,false));
+  });
+  peer.on("error",e=>{markConnected(state,false);flashTile(state,e.type==="peer-unavailable"?"No disponible.":"Error: "+e.type);});
+}
+function createTile(state){
+  const tile=document.createElement("div");tile.className="tile";
+  tile.innerHTML=`<div class="tilehead"><b>${escapeHtml(state.name.toUpperCase())}</b><span class="pill js-pill">Conectando…</span></div>
+  <div class="videoWrap"><video playsinline autoplay muted></video></div>
+  <div class="controls">
+    <button class="js-sound">🔊 Sonido</button><button class="js-zout">➖ Zoom</button><button class="js-zin">➕ Zoom</button>
+    <button class="js-hwzout">📷−</button><button class="js-hwzin">📷＋</button><button class="js-torch">🔦</button>
+    <button class="js-big">⛶ Grande</button><button class="js-remove">✕ Quitar</button>
+  </div>`;
+  grid.appendChild(tile);state.tile=tile;state.video=tile.querySelector("video");
+  tile.querySelector(".js-sound").onclick=()=>{state.video.muted=!state.video.muted;state.video.play().catch(()=>{});tile.querySelector(".js-sound").textContent=state.video.muted?"🔊 Sonido":"🔇 Silenciar";};
+  tile.querySelector(".js-zin").onclick=()=>digitalZoom(state,.25);tile.querySelector(".js-zout").onclick=()=>digitalZoom(state,-.25);
+  tile.querySelector(".js-hwzin").onclick=()=>sendCmd(state,{type:"zoom",delta:1});tile.querySelector(".js-hwzout").onclick=()=>sendCmd(state,{type:"zoom",delta:-1});
+  tile.querySelector(".js-torch").onclick=()=>sendCmd(state,{type:"torch"});tile.querySelector(".js-big").onclick=()=>tile.classList.toggle("big");
+  tile.querySelector(".js-remove").onclick=()=>removeViewerCamera(state.name);
+  let startDist=0,startZoom=1;const wrap=tile.querySelector(".videoWrap");
+  wrap.addEventListener("touchstart",e=>{if(e.touches.length===2){startDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);startZoom=state.zoom;}},{passive:true});
+  wrap.addEventListener("touchmove",e=>{if(e.touches.length===2&&startDist){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);state.zoom=Math.max(1,Math.min(5,startZoom*(d/startDist)));state.video.style.transform=`scale(${state.zoom})`; }},{passive:true});
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+function digitalZoom(s,d){s.zoom=Math.max(1,Math.min(5,s.zoom+d));s.video.style.transform=`scale(${s.zoom})`;}
+function sendCmd(s,msg){if(s.conn&&s.conn.open)s.conn.send(msg);else flashTile(s,"Control remoto no conectado.");}
+function flashTile(s,msg){const p=s.tile.querySelector(".js-pill"),prev=p.textContent;p.textContent=msg;setTimeout(()=>p.textContent=prev,1800);}
+function markConnected(s,ok){s.tile.querySelector(".js-pill").textContent=ok?"🟢 En vivo":"🔴 Sin conexión";}
+function removeViewerCamera(name){const s=viewers.get(name);if(!s)return;try{s.call?.close()}catch(e){}try{s.conn?.close()}catch(e){}try{s.peer?.destroy()}catch(e){}s.tile?.remove();viewers.delete(name);}
+showMode("viewer");
+</script>
+</body>
+</html>
