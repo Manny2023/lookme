@@ -1,0 +1,31 @@
+{
+  "id": "/lookme/",
+  "name": "TedyCam",
+  "short_name": "TedyCam",
+  "description": "TedyCam cámara remota de dos dispositivos.",
+  "start_url": "/lookme/",
+  "scope": "/lookme/",
+  "display": "standalone",
+  "background_color": "#05080d",
+  "theme_color": "#07111f",
+  "icons": [
+    {
+      "src": "/lookme/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lookme/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lookme/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
