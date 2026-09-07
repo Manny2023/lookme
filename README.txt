@@ -1,25 +1,20 @@
-TEDYCAM PWA
+TEDYCAM V2
+============
 
-Incluye:
-- Nombre TedyCam
-- Logo del oso con lentes dentro de la app
-- Iconos PWA derivados del mismo logo
-- Múltiples puntos/cámaras: puerta, ventana, patio, etc.
-- Video y audio
-- Botón de sonido
-- Zoom digital 1x a 5x y gesto de pellizcar
-- Intento de zoom real remoto cuando el teléfono lo permite
-- Linterna remota si el navegador/dispositivo lo permite
-- Cambio entre cámara frontal y trasera
-- Reconexión WebRTC
-- PWA instalable
+Esta versión corrige el problema del visor.
+
+CAMBIO IMPORTANTE:
+- La laptop NO pide cámara ni micrófono.
+- El visor usa una pista de audio silenciosa generada por software para iniciar correctamente la llamada WebRTC.
+- Antes de llamar, primero hace un handshake por canal de datos con la cámara.
+- Reintenta automáticamente varias veces.
+- PeerJS está configurado explícitamente con conexión segura.
+
+USO:
+1) Publica toda esta carpeta en HTTPS.
+2) En cada celular cámara: TRANSMITIR > misma clave > nombre único (puerta, ventana, patio) > ACTIVAR.
+3) En laptop: VER CÁMARAS > misma clave > nombres separados por comas > BUSCAR CÁMARAS.
+4) Cuando aparezca EN VIVO, toca SONIDO si quieres escuchar.
 
 IMPORTANTE:
-Debe publicarse en HTTPS. No abras index.html directamente como content:// porque Android bloqueará cámara y micrófono.
-
-Uso básico:
-1. Publica esta carpeta en un hosting HTTPS.
-2. Abre la misma URL en todos tus celulares.
-3. En cada celular que servirá como cámara: "Este equipo transmite", misma clave y nombre distinto.
-4. En tu celular principal: "Este equipo visualiza", misma clave y agrega los nombres.
-5. Toca "Sonido" para escuchar.
+No abrir como content://.
