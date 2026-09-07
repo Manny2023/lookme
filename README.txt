@@ -1,3 +1,21 @@
+TEDYCAM PRO v3.1 HORIZONTAL
+============================
+
+Esta versión mantiene la conexión que ya funcionó en PRO v3 y añade:
+- Captura solicitada en relación 16:9 horizontal.
+- PWA configurada con orientación landscape.
+- Vista local y remota llenan un cuadro horizontal 16:9.
+- Intenta bloquear la orientación de pantalla en horizontal cuando Android lo permite.
+
+IMPORTANTE:
+Coloca físicamente el teléfono cámara ACOSTADO (horizontal) antes de ENCENDER la cámara.
+Algunos Android ignoran el bloqueo de orientación del navegador; aun así la captura pide 1280x720 y 16:9.
+
+Para actualizar GitHub Pages:
+Reemplaza TODOS los archivos de la versión anterior por estos.
+Cierra TedyCam y vuelve a abrirla. Arriba debe decir:
+PRO v3.1 HORIZONTAL
+
 TEDYCAM PRO v3
 ================
 
