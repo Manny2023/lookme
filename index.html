@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>TedyCam PRO</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{
+  --bg:#05080d;--panel:#0c1624;--panel2:#101e30;--line:#244463;
+  --txt:#f6fbff;--muted:#91a8bd;--cyan:#2ed7ff;--blue:#0878ff;
+  --ok:#3bd467;--bad:#ff625c;--warn:#ffd64b;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(180deg,#03060a,#081321 55%,#04070c);
+color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{position:sticky;top:0;z-index:20;background:rgba(5,8,13,.96);backdrop-filter:blur(10px);
+border-bottom:1px solid var(--line);padding:10px 14px}
+.brand{display:flex;align-items:center;gap:10px;max-width:1050px;margin:auto}
+.brand img{width:46px;height:46px;border-radius:13px}
+.brand h1{margin:0;font-size:21px}.brand small{display:block;color:var(--muted)}
+.version{margin-left:auto;font-size:12px;color:#72ddff;border:1px solid #22516a;border-radius:999px;padding:5px 8px}
+main{max-width:1050px;margin:auto;padding:12px}
+.hero{text-align:center;padding:4px 0 10px}.hero img{width:135px;max-width:42vw;border-radius:25px;box-shadow:0 0 32px rgba(46,215,255,.13)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+button,input{font:inherit}
+button{border:0;border-radius:13px;padding:13px 14px;font-weight:800;color:#fff;background:#172a42;cursor:pointer}
+button.primary{background:linear-gradient(135deg,var(--blue),var(--cyan))}
+button.danger{background:#3b181b;color:#ffc5c1}
+.tabs button.on{outline:2px solid var(--cyan);box-shadow:0 0 0 3px rgba(46,215,255,.08)}
+.card{background:rgba(12,22,36,.97);border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 12px 35px rgba(0,0,0,.22)}
+label{display:block;font-size:13px;color:var(--muted);margin:4px 0 6px}
+input{width:100%;padding:13px;border-radius:12px;border:1px solid #294e76;background:#07111d;color:#fff}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.controls button{flex:1 1 110px;padding:10px}
+.status{margin-top:10px;padding:11px 12px;border-radius:12px;border:1px solid #294966;background:#08111b;color:var(--muted);font-weight:700}
+.status.good{color:#c1f8cb;border-color:#2e6c3e}.status.bad{color:#ffc6c2;border-color:#703734}.status.warn{color:#ffe59a;border-color:#6c5a2b}
+.videoBox{position:relative;aspect-ratio:16/9;background:#000;border-radius:16px;overflow:hidden;margin-top:11px;touch-action:none}
+video{width:100%;height:100%;object-fit:cover;background:#000;transform-origin:center}
+.badge{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.68);border:1px solid rgba(255,255,255,.13);
+padding:6px 9px;border-radius:999px;font-size:12px;color:#fff}
+.hidden{display:none!important}.note{color:var(--muted);font-size:13px;line-height:1.5}.install{display:inline-block}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
+.info div{background:#09131f;border:1px solid #203e5d;border-radius:12px;padding:9px}.info b{display:block;font-size:12px;color:#8da7bd}.info span{font-size:13px}
+@media(max-width:600px){main{padding:9px}.card{padding:11px}.hero img{width:105px}.brand h1{font-size:19px}}
+
+.dualSetup{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dualGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.tileTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.miniStatus{font-size:12px;color:var(--muted);border:1px solid #294966;padding:5px 8px;border-radius:999px}
+.camTile.bigTile{grid-column:1/-1}
+.camTile.hiddenTile{display:none}
+.camTile.bigTile .videoBox{max-height:78vh}
+@media(max-width:720px){.dualSetup,.dualGrid{grid-template-columns:1fr}.camTile.bigTile{grid-column:1}}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="./icons/icon-192.png" alt="TedyCam">
+    <div><h1>TedyCam</h1><small>Cámara remota sencilla</small></div>
+    <span class="version">PRO v4.1 DUAL</span>
+  </div>
+</header>
+
+<main>
+  <div class="hero"><img src="./logo.png" alt="TedyCam"></div>
+
+  <div class="tabs">
+    <button id="tabCam" onclick="showMode('cam')">📷 CÁMARA</button>
+    <button id="tabView" onclick="showMode('view')">👁 VER</button>
+  </div>
+
+  <section id="camSec" class="hidden">
+    <div class="card">
+      <label>Código de conexión</label>
+      <input id="camCode" placeholder="Ej. Oso123" autocomplete="off">
+      <div class="controls">
+        <button class="primary" onclick="startCamera()">🟢 ENCENDER</button>
+        <button class="danger" onclick="stopCamera()">🔴 APAGAR</button>
+        <button class="install">⬇ INSTALAR</button>
+      </div>
+      <div id="camStatus" class="status">Cámara apagada.</div>
+
+      <div class="videoBox">
+        <video id="localVideo" autoplay playsinline muted></video>
+        <span id="camBadge" class="badge">Vista local</span>
+      </div>
+
+      <div class="controls">
+        <button onclick="flipCamera()">🔄 Girar</button>
+        <button onclick="toggleTorch()">🔦 Luz</button>
+        <button onclick="hardwareZoom(-1)">➖ Zoom</button>
+        <button onclick="hardwareZoom(1)">➕ Zoom</button>
+      </div>
+
+      <div class="info">
+        <div><b>Video</b><span id="camVideoInfo">—</span></div>
+        <div><b>Audio</b><span id="camAudioInfo">—</span></div>
+        <div><b>Conexión</b><span id="camConnInfo">—</span></div>
+      </div>
+
+      <p class="note">Deja esta pantalla abierta mientras la uses como cámara. El código queda guardado en este dispositivo.</p>
+    </div>
+  </section>
+
+  <section id="viewSec">
+    <div class="card">
+      <h2 style="margin:0 0 8px">👁 Panel de 2 cámaras</h2>
+      <p class="note" style="margin-top:0">Cada teléfono usa un código distinto. Puedes conectar una sola o las dos.</p>
+      <div class="dualSetup">
+        <div>
+          <label>Cámara 1</label>
+          <input id="viewCode1" placeholder="Ej. Oso123" autocomplete="off">
+          <button class="primary" style="width:100%;margin-top:8px" onclick="connectSlot(1)">📡 CONECTAR 1</button>
+        </div>
+        <div>
+          <label>Cámara 2</label>
+          <input id="viewCode2" placeholder="Ej. Oso456" autocomplete="off">
+          <button class="primary" style="width:100%;margin-top:8px" onclick="connectSlot(2)">📡 CONECTAR 2</button>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="primary" onclick="connectBoth()">📡 CONECTAR LAS DOS</button>
+        <button onclick="disconnectAllSlots()">DESCONECTAR TODO</button>
+        <button class="install">⬇ INSTALAR</button>
+      </div>
+    </div>
+
+    <div class="dualGrid" id="dualGrid">
+      <div class="card camTile" id="tile1">
+        <div class="tileTitle"><b>📷 CÁMARA 1</b><span id="status1" class="miniStatus">Sin conectar</span></div>
+        <div class="videoBox" id="box1">
+          <video id="remote1" autoplay playsinline muted></video>
+          <span id="badge1" class="badge">Esperando video</span>
+        </div>
+        <div class="controls">
+          <button id="sound1" onclick="toggleSlotSound(1)">🔊 Sonido</button>
+          <button onclick="slotZoom(1,-.25)">➖ Zoom</button>
+          <button onclick="slotZoom(1,.25)">➕ Zoom</button>
+          <button onclick="slotCommand(1,'zoom',-1)">📷− Real</button>
+          <button onclick="slotCommand(1,'zoom',1)">📷＋ Real</button>
+          <button onclick="slotCommand(1,'torch')">🔦 Luz</button>
+          <button onclick="makeBig(1)">🔍 Grande</button>
+          <button class="danger" onclick="remoteOffSlot(1)">🔴 Apagar</button>
+        </div>
+        <div class="info">
+          <div><b>Video</b><span id="videoInfo1">—</span></div>
+          <div><b>Audio</b><span id="audioInfo1">—</span></div>
+        </div>
+      </div>
+
+      <div class="card camTile" id="tile2">
+        <div class="tileTitle"><b>📷 CÁMARA 2</b><span id="status2" class="miniStatus">Sin conectar</span></div>
+        <div class="videoBox" id="box2">
+          <video id="remote2" autoplay playsinline muted></video>
+          <span id="badge2" class="badge">Esperando video</span>
+        </div>
+        <div class="controls">
+          <button id="sound2" onclick="toggleSlotSound(2)">🔊 Sonido</button>
+          <button onclick="slotZoom(2,-.25)">➖ Zoom</button>
+          <button onclick="slotZoom(2,.25)">➕ Zoom</button>
+          <button onclick="slotCommand(2,'zoom',-1)">📷− Real</button>
+          <button onclick="slotCommand(2,'zoom',1)">📷＋ Real</button>
+          <button onclick="slotCommand(2,'torch')">🔦 Luz</button>
+          <button onclick="makeBig(2)">🔍 Grande</button>
+          <button class="danger" onclick="remoteOffSlot(2)">🔴 Apagar</button>
+        </div>
+        <div class="info">
+          <div><b>Video</b><span id="videoInfo2">—</span></div>
+          <div><b>Audio</b><span id="audioInfo2">—</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const VERSION = "PRO v4.1 DUAL";
+const PEER_CFG = {host:"0.peerjs.com", port:443, path:"/", secure:true, debug:1};
+
+let deferredPrompt = null;
+
+let cameraPeer = null;
+let cameraStream = null;
+let cameraVideoTrack = null;
+let cameraFacing = "environment";
+let torchOn = false;
+let cameraData = null;
+
+const slots = {
+  1:{peer:null,call:null,data:null,dummy:null,audioEl:null,zoom:1,timeout:null},
+  2:{peer:null,call:null,data:null,dummy:null,audioEl:null,zoom:1,timeout:null}
+};
+
+function byId(id){ return document.getElementById(id); }
+
+function showMode(mode){
+  byId("camSec").classList.toggle("hidden", mode !== "cam");
+  byId("viewSec").classList.toggle("hidden", mode !== "view");
+  byId("tabCam").classList.toggle("on", mode === "cam");
+  byId("tabView").classList.toggle("on", mode === "view");
+}
+
+function setStatus(id, text, kind=""){
+  const el = byId(id);
+  el.textContent = text;
+  el.className = "status" + (kind ? " " + kind : "");
+}
+
+async function hashCode(text){
+  const normalized = text.trim().toLowerCase();
+  const bytes = new TextEncoder().encode("tedycam-pro-v3|" + normalized);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+async function cameraPeerId(code){
+  const h = await hashCode(code);
+  return "tedy-" + h.slice(0,30);
+}
+
+function saveCode(code){
+  if(code) localStorage.setItem("tedycamCode", code);
+}
+
+function loadCode(){
+  const code = localStorage.getItem("tedycamCode") || "";
+  byId("camCode").value = code;
+  byId("viewCode1").value = localStorage.getItem("tedycamView1") || code;
+  byId("viewCode2").value = localStorage.getItem("tedycamView2") || "";
+}
+
+async function startCamera(){
+  const code = byId("camCode").value.trim();
+  if(!code){ alert("Escribe un código de conexión."); return; }
+  saveCode(code);
+  stopCamera();
+
+  try{
+    setStatus("camStatus","Abriendo cámara y micrófono…","warn");
+
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:cameraFacing},
+        width:{ideal:1280},
+        height:{ideal:720},
+        aspectRatio:{ideal:16/9},
+        frameRate:{ideal:20,max:30}
+      },
+      audio:{
+        echoCancellation:false,
+        noiseSuppression:false,
+        autoGainControl:true,
+        channelCount:{ideal:1}
+      }
+    });
+
+    byId("localVideo").srcObject = cameraStream;
+    await byId("localVideo").play().catch(()=>{});
+    try{
+      if(screen.orientation?.lock){
+        await screen.orientation.lock("landscape");
+      }
+    }catch(e){}
+
+    cameraVideoTrack = cameraStream.getVideoTracks()[0] || null;
+    const audioTrack = cameraStream.getAudioTracks()[0] || null;
+
+    byId("camVideoInfo").textContent = cameraVideoTrack ? "Lista" : "No disponible";
+    byId("camAudioInfo").textContent = audioTrack ? "Listo" : "No disponible";
+
+    const peerId = await cameraPeerId(code);
+    cameraPeer = new Peer(peerId, PEER_CFG);
+
+    cameraPeer.on("open", ()=>{
+      setStatus("camStatus","🟢 ENCENDIDA · esperando conexión","good");
+      byId("camConnInfo").textContent = "Esperando visor";
+    });
+
+    cameraPeer.on("connection", conn=>{
+      cameraData = conn;
+      conn.on("open", ()=>{
+        byId("camConnInfo").textContent = "Control conectado";
+      });
+      conn.on("data", async msg=>{
+        if(!msg || typeof msg !== "object") return;
+        if(msg.type === "hello"){
+          conn.send({type:"ready", version:VERSION});
+        }
+        if(msg.type === "zoom"){
+          const ok = await applyHardwareZoom(msg.delta || 0);
+          conn.send({type:"zoomResult", ok});
+        }
+        if(msg.type === "torch"){
+          const ok = await applyTorch();
+          conn.send({type:"torchResult", ok, on:torchOn});
+        }
+        if(msg.type === "powerOff"){
+          try{ conn.send({type:"powerOffAck"}); }catch(e){}
+          setTimeout(()=>stopCamera(), 250);
+        }
+      });
+      conn.on("close", ()=>{ byId("camConnInfo").textContent = "Control desconectado"; });
+    });
+
+    cameraPeer.on("call", call=>{
+      // The viewer offers dummy audio+video tracks, so the SDP has both m-lines.
+      // We answer with the real camera+microphone stream.
+      call.answer(cameraStream);
+      setStatus("camStatus","🟢 TRANSMITIENDO","good");
+      byId("camConnInfo").textContent = "Visor conectado";
+
+      call.on("close", ()=>{
+        if(cameraPeer){
+          setStatus("camStatus","🟢 ENCENDIDA · esperando conexión","good");
+          byId("camConnInfo").textContent = "Esperando visor";
+        }
+      });
+      call.on("error", ()=>{
+        setStatus("camStatus","⚠️ Error de transmisión","bad");
+      });
+    });
+
+    cameraPeer.on("disconnected", ()=>{
+      setStatus("camStatus","Reconectando señal…","warn");
+      byId("camConnInfo").textContent = "Reconectando";
+      setTimeout(()=>{ try{ cameraPeer && cameraPeer.reconnect(); }catch(e){} }, 1000);
+    });
+
+    cameraPeer.on("error", err=>{
+      setStatus("camStatus","⚠️ " + err.type,"bad");
+      byId("camConnInfo").textContent = err.type;
+    });
+
+  }catch(err){
+    setStatus("camStatus","❌ No se pudo abrir cámara/micrófono. Revisa permisos y HTTPS.","bad");
+    byId("camVideoInfo").textContent = "Error";
+    byId("camAudioInfo").textContent = "Error";
+  }
+}
+
+function stopCamera(){
+  try{ cameraData?.close(); }catch(e){}
+  try{ cameraPeer?.destroy(); }catch(e){}
+  cameraData = null;
+  cameraPeer = null;
+
+  if(cameraStream){
+    cameraStream.getTracks().forEach(t=>t.stop());
+  }
+  cameraStream = null;
+  cameraVideoTrack = null;
+  byId("localVideo").srcObject = null;
+  byId("camVideoInfo").textContent = "—";
+  byId("camAudioInfo").textContent = "—";
+  byId("camConnInfo").textContent = "—";
+  setStatus("camStatus","Cámara apagada.");
+}
+
+async function flipCamera(){
+  if(!cameraStream){ alert("Primero enciende la cámara."); return; }
+  const code = byId("camCode").value;
+  cameraFacing = cameraFacing === "environment" ? "user" : "environment";
+  stopCamera();
+  byId("camCode").value = code;
+  await startCamera();
+}
+
+async function applyHardwareZoom(delta){
+  if(!cameraVideoTrack) return false;
+  try{
+    const caps = cameraVideoTrack.getCapabilities?.() || {};
+    const settings = cameraVideoTrack.getSettings?.() || {};
+    if(!caps.zoom) return false;
+    const step = caps.zoom.step || 0.1;
+    let z = (settings.zoom || caps.zoom.min || 1) + delta * step * 3;
+    z = Math.max(caps.zoom.min, Math.min(caps.zoom.max, z));
+    await cameraVideoTrack.applyConstraints({advanced:[{zoom:z}]});
+    return true;
+  }catch(e){ return false; }
+}
+
+async function hardwareZoom(delta){
+  const ok = await applyHardwareZoom(delta);
+  if(!ok) alert("Este teléfono no ofrece zoom real al navegador.");
+}
+
+async function applyTorch(){
+  if(!cameraVideoTrack) return false;
+  try{
+    const caps = cameraVideoTrack.getCapabilities?.() || {};
+    if(!caps.torch) return false;
+    torchOn = !torchOn;
+    await cameraVideoTrack.applyConstraints({advanced:[{torch:torchOn}]});
+    return true;
+  }catch(e){ return false; }
+}
+
+async function toggleTorch(){
+  const ok = await applyTorch();
+  if(!ok) alert("Linterna no disponible en este teléfono/navegador.");
+}
+
+// Creates fake local tracks WITHOUT opening the viewer's camera or microphone.
+// Each viewer slot gets its own negotiation stream and Peer connection.
+function createDummyAVStream(){
+  const out = new MediaStream();
+  try{
+    const canvas = document.createElement("canvas");
+    canvas.width=2; canvas.height=2;
+    const ctx=canvas.getContext("2d"); ctx.fillStyle="#000"; ctx.fillRect(0,0,2,2);
+    const cs=canvas.captureStream(1), vt=cs.getVideoTracks()[0];
+    if(vt) out.addTrack(vt);
+  }catch(e){}
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    const ac=new AC(), osc=ac.createOscillator(), gain=ac.createGain(), dest=ac.createMediaStreamDestination();
+    gain.gain.value=0; osc.connect(gain).connect(dest); osc.start();
+    const at=dest.stream.getAudioTracks()[0]; if(at) out.addTrack(at);
+    out._audioContext=ac; out._oscillator=osc;
+  }catch(e){}
+  return out;
+}
+
+function slotStatus(n,text,kind=""){
+  const el=byId("status"+n); el.textContent=text;
+  el.style.color=kind==="good"?"#baf5c5":kind==="bad"?"#ffc6c2":kind==="warn"?"#ffe59a":"#91a8bd";
+}
+function cleanupSlotDummy(n){
+  const st=slots[n]; if(!st.dummy)return;
+  try{st.dummy.getTracks().forEach(t=>t.stop())}catch(e){}
+  try{st.dummy._oscillator?.stop()}catch(e){}
+  try{st.dummy._audioContext?.close()}catch(e){}
+  st.dummy=null;
+}
+function disconnectSlot(n){
+  const st=slots[n];
+  if(st.timeout) clearTimeout(st.timeout);
+  try{st.call?.close()}catch(e){} try{st.data?.close()}catch(e){} try{st.peer?.destroy()}catch(e){}
+  st.peer=null;st.call=null;st.data=null;st.timeout=null;cleanupSlotDummy(n);st.zoom=1;
+  const v=byId("remote"+n);
+  if(st.audioEl){try{st.audioEl.pause();st.audioEl.srcObject=null}catch(e){} st.audioEl=null}
+  if(v.srcObject){try{v.srcObject.getTracks().forEach(t=>t.stop())}catch(e){}}
+  v.srcObject=null;v.muted=true;v.volume=1;v.style.transform="scale(1)";
+  byId("sound"+n).textContent="🔊 Sonido";byId("badge"+n).textContent="Esperando video";
+  byId("videoInfo"+n).textContent="—";byId("audioInfo"+n).textContent="—";slotStatus(n,"Sin conectar");
+}
+function disconnectAllSlots(){disconnectSlot(1);disconnectSlot(2);showBoth()}
+async function connectSlot(n){
+  const input=byId("viewCode"+n), code=input.value.trim();
+  if(!code){alert("Escribe el código de Cámara "+n+".");return}
+  localStorage.setItem("tedycamView"+n,code);disconnectSlot(n);
+  slotStatus(n,"Buscando…","warn");byId("badge"+n).textContent="Buscando";
+  const rid=await cameraPeerId(code), st=slots[n];
+  st.peer=new Peer(undefined,PEER_CFG);
+  st.peer.on("open",()=>{
+    st.data=st.peer.connect(rid,{reliable:true});
+    st.data.on("open",()=>{slotStatus(n,"Encontrada","warn");st.data.send({type:"hello",version:VERSION})});
+    st.data.on("data",msg=>{
+      if(!msg||typeof msg!=="object")return;
+      if(msg.type==="ready"&&!st.call){
+        slotStatus(n,"Iniciando video…","warn");byId("badge"+n).textContent="Iniciando";
+        st.dummy=createDummyAVStream();
+        if(st.dummy.getVideoTracks().length===0){slotStatus(n,"Sin pista WebRTC","bad");return}
+        st.call=st.peer.call(rid,st.dummy,{metadata:{mode:"viewer",version:VERSION,slot:n}});
+        st.call.on("stream",stream=>{
+          const v=byId("remote"+n);v.srcObject=stream;
+          stream.getAudioTracks().forEach(t=>t.enabled=true);
+          const ats=stream.getAudioTracks();
+          byId("videoInfo"+n).textContent=stream.getVideoTracks().length?"Recibido":"No";
+          byId("audioInfo"+n).textContent=ats.length ? (ats[0].muted ? "Recibido · silenciado origen" : "Recibido · listo") : "No";
+          if(!st.audioEl){
+            st.audioEl=new Audio();
+            st.audioEl.autoplay=false;
+            st.audioEl.playsInline=true;
+          }
+          st.audioEl.srcObject=stream;
+          st.audioEl.volume=1;
+          v.onloadedmetadata=async()=>{
+            await v.play().catch(()=>{});
+            if(v.videoWidth>0&&v.videoHeight>0){
+              slotStatus(n,"🟢 EN VIVO","good");byId("badge"+n).textContent=`${v.videoWidth}×${v.videoHeight}`;
+              byId("videoInfo"+n).textContent=`${v.videoWidth}×${v.videoHeight}`;
+            }
+          };
+          setTimeout(()=>{
+            if(v.videoWidth>0&&v.videoHeight>0){slotStatus(n,"🟢 EN VIVO","good");byId("badge"+n).textContent=`${v.videoWidth}×${v.videoHeight}`}
+            else{slotStatus(n,"Conectada, sin imagen","warn");byId("badge"+n).textContent="Sin cuadro"}
+          },3500);
+        });
+        st.call.on("close",()=>slotStatus(n,"Desconectada","bad"));
+        st.call.on("error",()=>slotStatus(n,"Error de video","bad"));
+      }
+      if(msg.type==="powerOffAck"){slotStatus(n,"🔴 Apagada","bad");byId("badge"+n).textContent="Apagada"}
+      if(msg.type==="zoomResult"&&!msg.ok)slotStatus(n,"Zoom real no disponible","warn");
+      if(msg.type==="torchResult"&&!msg.ok)slotStatus(n,"Linterna no disponible","warn");
+    });
+  });
+  st.peer.on("error",err=>slotStatus(n,err.type==="peer-unavailable"?"No encontrada":"⚠️ "+err.type,"bad"));
+  st.timeout=setTimeout(()=>{if(!byId("remote"+n).srcObject)slotStatus(n,"Sin video todavía","warn")},10000);
+}
+async function connectBoth(){
+  const a=byId("viewCode1").value.trim(),b=byId("viewCode2").value.trim();
+  if(!a&&!b){alert("Pon al menos un código.");return}
+  if(a) await connectSlot(1);
+  if(b) await connectSlot(2);
+}
+async function toggleSlotSound(n){
+  const other=n===1?2:1, st=slots[n], ost=slots[other];
+  const stream=byId("remote"+n).srcObject;
+  if(!stream || !stream.getAudioTracks().length){
+    slotStatus(n,"No llegó audio del teléfono","bad"); return;
+  }
+  if(ost.audioEl){ost.audioEl.pause();ost.audioEl.muted=true}
+  byId("remote"+other).muted=true;
+  byId("sound"+other).textContent="🔊 Sonido";
+
+  if(!st.audioEl){
+    st.audioEl=new Audio(); st.audioEl.srcObject=stream; st.audioEl.playsInline=true;
+  }
+  if(st.audioEl.paused || st.audioEl.muted){
+    try{
+      stream.getAudioTracks().forEach(t=>t.enabled=true);
+      st.audioEl.muted=false; st.audioEl.volume=1;
+      await st.audioEl.play();
+      byId("sound"+n).textContent="🔇 Silenciar";
+      slotStatus(n,"🔊 AUDIO ESCUCHÁNDOSE","good");
+    }catch(e){
+      slotStatus(n,"⚠️ Android bloqueó reproducción. Toca Sonido otra vez.","warn");
+    }
+  }else{
+    st.audioEl.pause(); st.audioEl.muted=true;
+    byId("sound"+n).textContent="🔊 Sonido";
+  }
+}
+function slotZoom(n,d){const st=slots[n];st.zoom=Math.max(1,Math.min(5,st.zoom+d));byId("remote"+n).style.transform=`scale(${st.zoom})`}
+function slotCommand(n,type,delta=0){const st=slots[n];if(st.data?.open)st.data.send({type,delta});else alert("Primero conecta Cámara "+n+".")}
+function remoteOffSlot(n){
+  const st=slots[n];if(!st.data?.open){alert("Primero conecta Cámara "+n+".");return}
+  if(confirm("¿Apagar cámara y micrófono de Cámara "+n+"?")){st.data.send({type:"powerOff"});slotStatus(n,"Apagando…","warn")}
+}
+function makeBig(n){
+  const t=byId("tile"+n),o=byId("tile"+(n===1?2:1));
+  if(t.classList.contains("bigTile")){showBoth();return}
+  t.classList.add("bigTile");o.classList.add("hiddenTile");
+}
+function showBoth(){
+  byId("tile1").classList.remove("bigTile","hiddenTile");
+  byId("tile2").classList.remove("bigTile","hiddenTile");
+}
+function fullscreenSlot(n){const b=byId("box"+n);if(b.requestFullscreen)b.requestFullscreen()}
+
+window.addEventListener("beforeunload", ()=>{
+  stopCamera();
+  disconnectAllSlots();
+});
+
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  document.querySelectorAll(".install").forEach(b=>b.textContent="⬇ INSTALAR TEDYCAM");
+});
+window.addEventListener("appinstalled", ()=>{
+  deferredPrompt=null;
+  document.querySelectorAll(".install").forEach(b=>b.textContent="✓ TEDYCAM INSTALADA");
+});
+document.addEventListener("click", async e=>{
+  if(!e.target?.classList.contains("install")) return;
+  if(window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone){
+    alert("TedyCam ya está instalada como app.");
+    return;
+  }
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    const choice=await deferredPrompt.userChoice;
+    if(choice.outcome==="accepted") e.target.textContent="✓ INSTALANDO…";
+    deferredPrompt=null;
+    return;
+  }
+  alert("Si no aparece la ventana de instalación: abre el menú ⋮ de Chrome y toca “Instalar app” o “Agregar a pantalla principal”.");
+});
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  });
+}
+
+loadCode();
+showMode("view");
+</script>
+</body>
+</html>

@@ -1,25 +1,22 @@
-TEDYCAM PRO v4 DUAL
-===================
-Versión completa basada en la v3.2 que ya funcionó.
+TEDYCAM PRO v4.1 DUAL
+======================
+Versión completa.
 
-NUEVO:
-- Hasta 2 teléfonos cámara simultáneos.
-- Cada cámara usa su propio código.
-- Ver las dos lado a lado.
-- Botón GRANDE en cada cámara: oculta la otra y agranda la elegida.
-- Vuelve a tocar GRANDE para regresar a las dos.
-- Audio independiente: al activar sonido en una, la otra se silencia automáticamente.
-- Zoom digital y zoom real (si el teléfono lo permite) por cámara.
-- Linterna por cámara.
-- Apagado remoto independiente por cámara.
-- Mantiene modo horizontal y la negociación WebRTC corregida.
+CORREGIDO:
+- PWA instalable con icono TedyCam.
+- Botón INSTALAR siempre visible; si Chrome no entrega el aviso automático, explica usar menú ⋮ > Instalar app.
+- Manifest con ID, modo standalone, iconos normal y maskable.
+- Audio reforzado: el teléfono pide micrófono junto con cámara.
+- El visor usa un reproductor de audio dedicado para evitar fallos al desmutear el video.
+- Solo una cámara reproduce sonido a la vez.
+- Mantiene 2 cámaras, vista grande, horizontal, zoom, luz y apagado remoto.
 
-EJEMPLO:
-Teléfono 1: CÁMARA > Oso123 > ENCENDER
-Teléfono 2: CÁMARA > Oso456 > ENCENDER
-Laptop: VER > Cámara 1 Oso123 > Cámara 2 Oso456 > CONECTAR LAS DOS
+IMPORTANTE SOBRE PERMISOS:
+Instalar la PWA NO es lo que concede el micrófono. El permiso se solicita al tocar ENCENDER CÁMARA.
+En Android acepta CÁMARA y MICRÓFONO cuando Chrome/TedyCam lo pregunte.
+Si antes negaste micrófono: información/permisos del sitio o de la app > Micrófono > Permitir.
 
-ACTUALIZACIÓN:
+ACTUALIZAR:
 Reemplaza TODOS los archivos en GitHub Pages.
-Cierra y vuelve a abrir la PWA en todos los equipos.
-Arriba debe decir PRO v4 DUAL.
+Cierra las pestañas/PWA viejas y vuelve a abrir.
+Debe decir PRO v4.1 DUAL.
